@@ -1,10 +1,11 @@
 ---
-title: ""
+title: "MSBio MIMICS Litter Decomp Incubation Simulation"
 author: "Derek Pierson"
 date: "3/19/2022"
 output:
+  pdf_document: default
   html_document:
-    code_folding: hide
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
@@ -22,39 +23,55 @@ library(gridExtra)
 
 ```
 
-## MSBio MIMICS Litter Decomp Incubation Simulation
 ### Version 1.0
 
 #### The following MIMICS simulation attempts to align litter decomposition rates observed between two sites (HARV, BSCI) by [Polussa et al 2021](https://doi.org/10.1016/j.soilbio.2021.108451) using inherent site-level differences in soil moisture as a scalar on microbial decomposition kinetics.
 
 ### Key figures from Polussa et al. 2021
 
+#### **Initial modeling goal is to align MIMICS projections with Fig. 2E and the mesic slopes in Fig. 3.**
+
+</br>
+
+</br>
+
+##### Polussa et al. Fig. 2: Litter mineralization rates over 202 days.
 <center>
 ![Polussa et al. Fig. 2: Litter mineralization rates over 202 days.](https://ars.els-cdn.com/content/image/1-s2.0-S0038071721003254-gr2.jpg){width=70% height=70%}
 </center>
 
 </br>
 
+</br>
+
+##### Polussa et al. Fig. 3: Cumulative mineralization for unique decomposer communities sourced from within the SCBI (a) and HARV (b) sites.
 <center>
 ![Polussa et al. Fig. 3: Cumulative mineralization for unique decomposer communities sourced from within the SCBI (a) and HARV (b) sites.](https://ars.els-cdn.com/content/image/1-s2.0-S0038071721003254-gr3.jpg){width=70% height=70%}
 </center>
 
 </br>
 
+</br>
+
+##### Polussa et al. Fig. 1: Soil moisture variation in sampling points from HARV (a) and SCBI (b) from Spring 2020.
 <center>
 ![Polussa et al. Fig. 1: Soil moisture variation in sampling points from HARV (a) and SCBI (b) from Spring 2020.](https://ars.els-cdn.com/content/image/1-s2.0-S0038071721003254-gr1.jpg){width=50% height=50%}
 </center>
 
 </br>
 
-### Begin Analysis
+</br>
+
+## Begin Modeling & Analysis
 
 #### Loading the field data
 
 **INITIAL ASSUMPTIONS:**
 
-* Set ANPP, CLAY and LIG:N model inputs to be equal across all simulations.
+* Set ANPP, CLAY and LIG:N input to be equal across all simulations.
 * MAT temperature set to equal 20 C, same as the incubation.
+* Mean annual soil moisture (MASM) difference between sites guesstimated from difference in field soil GWC.
+* Using unmodified field soil GWC 
 
 </br>
 
@@ -72,10 +89,19 @@ paged_table(fdata_whc65)
 
 #### Load the MIMICS model function, adapted to simulate the lab incubation
 
-### Important notes and code changes:
+### Important notes and MIMICS code modifications:
 
-1. Two separate scalars applied to VMAX and KM. One for cross-site effect (~MASM), the other for within site effect (~GWC, similar to past implementations of fW).
+1. ##### **Two separate scalars applied to VMAX and KM. One for cross-site effect (~MASM), the other for within site effect (~GWC, similar to past implementations of fW).**
+
 2. Simulating the incubation over 200 days at an hourly time step.
+
+3. Initiate with litter = 100, SOM pools = 0. MIC pools = 0.01.
+
+4. ANPP value is contributing to Tau modifier, but adding no C input to simulation.
+
+5. Clay impact on simulation?
+
+6. Guesstimate used for litter lignin:N
 
 
 ```{r echo=TRUE}
@@ -277,8 +303,10 @@ MIMICS_INC_HOUR <- function(df, ndays = 200){
 
 #### Example MIMICS-INC Simulation + Output plots
 
+The follwoing code shows how to run a MIMICS INC simulation for a single sample.
+
 ```{r echo=TRUE, eval=TRUE, warning=FALSE}
-# Example forcing data
+# Example forcing data for a single sample
 df <- data.frame(SITE = 'HARV',
                  OID = 1,
                  ANPP = 0,
@@ -302,9 +330,12 @@ akGWC <- 0.5
 
 # Run the model function
 MIMout <- MIMICS_INC_HOUR(df[1,], ndays = 200)
+```
 
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE}
 ############
-# Plots
+# Plot MIMICS output for a single MIMICS simulation
 ###########
 
 # Litter mass
@@ -343,9 +374,11 @@ ggarrange(plot_LIT, plot_SOM_MIC, plot_CO2,
 
 </br>
 
+</br>
+
 ### Set up MCMC optimization to find best-fit parameters
 
-**Optimizing for 8 parameters:**
+##### **Optimizing for 8 parameters:**
 
 1. VMAX through Vslope, Vint
 2. KM through Kslope, Kint
@@ -356,6 +389,11 @@ ggarrange(plot_LIT, plot_SOM_MIC, plot_CO2,
 
 All other parameters set to initial defaults from Wieder et al. 2015.
 
+</br>
+
+#### First step, create function to load parameter values, run MIMICS-INC ftn, and return summarized MIMICS output
+
+*Function referred to as "MIM-repeat"*
 
 ```{r echo=TRUE}
 # Load default parameters from R script
@@ -423,6 +461,10 @@ MIMrepeat <- function(forcing_df, rparams, output_type = "summary") {
 
 ```
 
+</br>
+
+#### Example use of MIM-repeat function
+
 ```{r echo=TRUE, eval=FALSE}
 # Example usage of MIMrepeat, output full model results
 
@@ -458,8 +500,12 @@ gc()
 saveRDS(MIMresults, paste0("MCMC/output/MSBIO_INC_MIMresults_", Sys.Date(),".rds"))
 ```
 
+</br>
+
+#### Plot MIM-repeat output
+
 ```{r echo=TRUE}
-MIMresults <- readRDS(paste0("MCMC/output/MSBIO_INC_MIMresults_", Sys.Date(),".rds"))
+MIMresults <- readRDS(paste0("MCMC/output/MSBIO_INC_MIMresults_", Sys.Date()-1,".rds"))
 
 ### MIMrepeat output diagnostic plots ###
 tots <- MIMresults %>% filter(DAY == 200)
@@ -478,7 +524,13 @@ ggplot(tots, aes(x=TOT_CO2, y=cum_LitterCMin, color=site)) + geom_point(size=3) 
 
 ```
 
-```{r echo=TRUE, eval=FALSE}
+</br>
+
+#### Second step, create MCMC function to pick parameter proposals from walking, uniform distributions.
+
+*Referred to as MCMC optimization*
+
+```{r echo=TRUE, eval=FALSE, class.source = 'fold-hide'}
 #### MCMC OPTIMIZATION CODE ####
 ## Adpated from MIMICS_HiRes repo
 
@@ -678,12 +730,14 @@ saveRDS(MCMC_out, paste0("MCMC/output/MSBIO_INC_MCMC_out_", Sys.Date(),".rds"))
 
 ```
 
+</br>
 
-```{r echo=TRUE}
+#### Plot showing example of MCMC optimization walk
+```{r echo=TRUE, class.source = 'fold-hide'}
 ### Plot MCMC walk
 
 # Load the data
-MCMC_out <- readRDS(paste0("MCMC/output/MSBIO_INC_MCMC_out_", Sys.Date(),".rds"))
+MCMC_out <- readRDS(paste0("MCMC/output/MSBIO_INC_MCMC_out_", Sys.Date()-1,".rds"))
 
 #Add an end row
 improve_steps <- MCMC_out %>% filter(improve == 1)
@@ -764,4 +818,15 @@ grid.arrange(pHARVslope, pSCBIslope,
 
 ```
 
+
+## Takeaways & further questions
+
+#### We're just above the ground floor with this code. 
+
+* Scalar application and equations are an educated, shot in dark.
+* Moving to a daily time-step will greatly increase MCMC & MC efficiency.
+* Worth solving for core parameters in addition to moisture scalars?
+* MCMC targets may need to be adjusted.
+* Not yet using MCMC to solve for CO2-C production
+* How to use microbial biomass data?
 

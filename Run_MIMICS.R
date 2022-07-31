@@ -77,7 +77,7 @@ df50$SITE <-  sprintf("SITE%d",seq(1:250)) # Set unique SITE names
 # Run MIMICS using each row of SITE data and row bind the model output into one dataframe
 # Set number of cores to use
 no_cores <- availableCores() - 1
-plan(multisession, gc = FALSE, workers = no_cores)
+plan(multicore, gc = TRUE, workers = no_cores)
 
 # Run MIMICS!
 system.time(
@@ -90,6 +90,8 @@ nbrOfWorkers()
 
 # Clean up memory
 gc()
+
+
 
 ### Map: 76 sec
 ### Multicore: 87 sec
