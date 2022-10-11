@@ -1,0 +1,7 @@
+library(withr)
+
+with_makevars(c(PKG_CFLAGS = "-std=c11"), 
+              install.packages("plyr", repos = NULL, type = "source"), 
+              assignment = "+=")
+
+with_makevars(c(PKG_CFLAGS = "-std=c11"), install.packages("furrr"), assignment = "+=")
