@@ -1,0 +1,13 @@
+#!/bin/tcsh
+#PBS -N OpenMP_job
+#PBS -A P93300641
+#PBS -l select=1:ncpus=8:ompthreads=8
+#PBS -l walltime=00:10:00
+#PBS -q casper
+#PBS -j oe
+
+setenv TMPDIR /glade/scratch/dpierson/casper_temp
+mkdir -p $TMPDIR
+
+### Run program
+./HPC/MIMICS_daily_test_run.R
