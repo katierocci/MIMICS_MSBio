@@ -7,6 +7,7 @@
 ########################################
 library(dplyr)
 library(rootSolve)
+library(purrr)
 library(furrr)
 
 
@@ -28,7 +29,7 @@ data <- read.csv("Data/MIMICS_forcings/MSBio_forcing_temp_trts_only.csv", as.is=
 ####################################
 
 # Set desired number of random parameter runs
-MIM_runs <- 100
+MIM_runs <- 500
 
 ### Create random parameter dataframe
 ## Parameter range informed by range observed over 10+ MCMC analysis results
@@ -46,7 +47,7 @@ rand_params$run_num <- seq(1,MIM_runs,1)
 
 # Set number of cores to use
 no_cores <- availableCores() - 1
-plan(multicore, gc = TRUE, workers = no_cores)
+plan(multisession, gc = TRUE, workers = no_cores)
 
 # Run MIMICS!
 
@@ -55,7 +56,11 @@ print(paste0("Start time: ", Sys.time()))
 
 start_time <- Sys.time()
 MC_MIMICS <- rand_params %>% split(1:nrow(rand_params)) %>% future_map(~ MIMrepeat(forcing_df = data, rparams = .), .progress=TRUE) %>% bind_rows()
-print(paste0("Task time: ", Sys.time() - start_time))
+
+wall_time <- Sys.time() - start_time
+print(paste0("Task time: ", as.character(wall_time)))
+write.csv(data.frame(time=wall_time), paste0("Cheyenne_HPC/HPC_output/wall_time_", as.character(MIM_runs), "_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".rds"), row.names = F)
+
 
 # Release CPU cores
 plan(sequential)
