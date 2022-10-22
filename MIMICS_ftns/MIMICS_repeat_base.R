@@ -6,6 +6,10 @@ source("MIMICS_ftns/MIMICS_INC_daily.R")
 
 MIMrepeat <- function(forcing_df, rparams) {
   
+  #debug
+  #forcing_df = data
+  #rparams = rand_params
+  
   # Set global model parameters
   Vslope <<- Vslope_default * rparams$Vslope_x[1]
   Vint <<- Vint_default * rparams$Vint_x[1]
@@ -23,7 +27,7 @@ MIMrepeat <- function(forcing_df, rparams) {
   MIMrun <- forcing_df %>% split(1:nrow(forcing_df)) %>% map(MIMICS_INC_DAILY) %>% bind_rows() 
 
   #Optional combine MIMout with forcing data
-  MIMrun <- forcing_df %>% cbind(MIMrun %>% select(-SITE))
+  #MIMrun <- MIMrun %>% left_join(forcing_df %>% select(-SITE), by="ID")
   
   #add run number
   MIMrun$run_num <- rparams$run_num[1]
@@ -32,3 +36,6 @@ MIMrepeat <- function(forcing_df, rparams) {
   return(MIMrun)
 }
 
+
+# DIAGNOSTIC CODE BITS
+#output <- MIMrepeat(forcing_df = data, rparams = rand_params) %>% filter(DAY==200)
