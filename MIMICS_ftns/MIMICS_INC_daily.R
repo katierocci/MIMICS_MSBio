@@ -117,7 +117,8 @@ MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
   OXIDAT  <- rep(NA, dim=1)
   
   # Create dataframe to store model output
-  MIMout <- data.frame(SITE = rep(df$SITE, nday),
+  MIMout <- data.frame(ID = rep(df$ID, nday),
+                       SITE = rep(df$SITE, nday),
                        DAY = rep(NA, nday),
                        LITm = rep(NA, nday),
                        LITs = rep(NA, nday),
