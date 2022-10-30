@@ -22,21 +22,22 @@ source("MIMICS_ftns/MIMICS_repeat_base.R")
 ########################################
 # Load forcing data
 ########################################
-data <- read.csv("Data/MIMICS_forcings/MSBio_forcing_temp_trts_only.csv", as.is=T)
+data <- read.csv("Data/MIMICS_forcings/MSBio_forcing_INC_mock.csv", as.is=T)
+colnames(data)[1] <- "ID"
 
 ####################################
 # Use the brute force MIMICS ftn
 ####################################
 
 # Set desired number of random parameter runs
-MIM_runs <- 10000
+MIM_runs <- 100000
 
 ### Create random parameter dataframe
 ## Parameter range informed by range observed over 10+ MCMC analysis results
-rand_params <- data.frame(Vslope_x = runif(MIM_runs, 0.8, 1.5),  
-                          Vint_x = runif(MIM_runs, 0.8, 1.5),  
-                          Kslope_x = runif(MIM_runs, 0.8, 1.5),  
-                          Kint_x = runif(MIM_runs, 0.8, 1.5)#,  
+rand_params <- data.frame(Vslope_x = runif(MIM_runs, 0.5, 2),  
+                          Vint_x = runif(MIM_runs, 0.5, 2),  
+                          Kslope_x = runif(MIM_runs, 0.5, 2),  
+                          Kint_x = runif(MIM_runs, 0.5, 2)#,  
                           # Tau_x = runif(MIM_runs, 0.3, 3),  
                           # CUE_x = runif(MIM_runs, 0.5, 1.5),  
                           # desorb_x = runif(MIM_runs, 0.001, 0.3),  

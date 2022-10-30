@@ -15,11 +15,11 @@ source("MIMICS_ftns/RXEQ_day_ftn.R")
 ###########################################
 # MIMICS single point function
 ###########################################
-MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
+MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   
   #DEBUG
   #df <- data[1,]
-  #ndays <- 200
+  #ndays <- 105
   
   ### note var may be used to collect run notes
   note <- ""
@@ -131,7 +131,7 @@ MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
                        CO2_MICK = rep(NA, nday))
   
   # Initialize model pools and fluxes
-  I        <- rep(0,2)
+  I       <- rep(0,2)
   LIT_1    <- 100   
   LIT_2    <- 100
   MIC_1    <- 0.01
@@ -143,20 +143,19 @@ MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
   CO2_2    <- 0
   
   ## Set global parameters to pass to RXEQ function
-#DEBUG: Double check this works correctly when run outside of the loop
-  .GlobalEnv$VMAX <- VMAX
-  .GlobalEnv$KM <- KM
-  .GlobalEnv$fPHYS <- fPHYS
-  .GlobalEnv$fCHEM <- fCHEM
-  .GlobalEnv$fAVAI <- fAVAI
+  VMAX <<- VMAX
+  KM <<- KM
+  fPHYS <<- fPHYS
+  fCHEM <<- fCHEM
+  fAVAI <<- fAVAI
   .GlobalEnv$I <- I
   .GlobalEnv$tau <- tau
-  .GlobalEnv$LITmin <- LITmin
-  .GlobalEnv$SOMmin <- SOMmin
-  .GlobalEnv$MICtrn <- MICtrn
-  .GlobalEnv$desorb <- desorb
-  .GlobalEnv$DEsorb <- DEsorb
-  .GlobalEnv$OXIDAT <- OXIDAT
+  LITmin <<- LITmin
+  SOMmin <<- SOMmin
+  MICtrn <<- MICtrn
+  desorb <<- desorb
+  DEsorb <<- DEsorb
+  OXIDAT <<- OXIDAT
   
   # Create vector of parameter values
   tpars <- c(I = I, VMAX = VMAX, KM = KM, CUE = CUE, 
@@ -201,8 +200,13 @@ MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
   }	#close daily loop	
 
   # Return daily model output as datatable
-  return(MIMout) #Tbl with each of the 200 days
-  #return(MIMout %>% filter(DAY == 200)) #Only day 200
+  #return(MIMout) #Tbl with each of the 200 days
+  
+  ftn_output <- MIMout %>% filter(DAY == 200) #Only day 200
+  ftn_output$VMAX <- VMAX[1]
+  ftn_output$KM <- KM[1]
+  return(ftn_output)
+
   
 } #close ftn
 
@@ -213,7 +217,8 @@ MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
 # ##############################################
 # #single point run
 # ##############################################
-# df <- data.frame(SITE = 'TEST',
+# df <- data.frame(ID = 'T1',
+#                  SITE = 'TEST',
 #                    ANPP = 750,
 #                    MAT = 15,
 #                    CLAY = 15,
@@ -222,11 +227,14 @@ MIMICS_INC_DAILY <- function(df, ndays=200, parm_mult){
 #                    CN = 49,
 #                    fw=0.6)
 # 
+# library(dplyr)
+# setwd("C:/github/MIMICS_MSBio")
+# 
 # source("MIMICS_ftns/MIMICS_set_parameters.R")
 # Vslope = Vslope_default * 1.4425676
 # Vint = Vint_default * 0.9413847
-# Kslope = Kslope_default * 1.4416737 
-# Kint = Kint_default * 0.4436813 
+# Kslope = Kslope_default * 1.4416737
+# Kint = Kint_default * 0.4436813
 # 
 # MIMout <- MIMICS_INC_DAILY(df[1,])
 
