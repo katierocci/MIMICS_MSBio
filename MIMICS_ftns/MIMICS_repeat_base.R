@@ -11,10 +11,10 @@ MIMrepeat <- function(forcing_df, rparams) {
   #rparams = rand_params
   
   # Set global model parameters
-  Vslope <<- Vslope_default * rparams$Vslope_x[1]
+  #Vslope <<- Vslope_default * rparams$Vslope_x[1]
   Vint <<- Vint_default * rparams$Vint_x[1]
-  Kslope <<- Kslope_default * rparams$Kslope_x[1]
-  Kint <<- Kint_default * rparams$Kint_x[1]
+  #Kslope <<- Kslope_default * rparams$Kslope_x[1]
+  #Kint <<- Kint_default * rparams$Kint_x[1]
   
   # Tau_MULT <<- Tau_MULT_default * rparams$Tau_x[1]
   # CUE <<- CUE_default * rparams$CUE_x[1]

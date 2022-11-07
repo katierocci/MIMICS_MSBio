@@ -202,7 +202,7 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   # Return daily model output as datatable
   #return(MIMout) #Tbl with each of the 200 days
   
-  ftn_output <- MIMout %>% filter(DAY == 200) #Only day 200
+  ftn_output <- MIMout %>% filter(DAY == 105) #Only day 200
   ftn_output$VMAX <- VMAX[1]
   ftn_output$KM <- KM[1]
   return(ftn_output)
