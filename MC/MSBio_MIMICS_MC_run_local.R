@@ -1,6 +1,8 @@
 ### MIMICS MC
 
-setwd("C:/github/MIMICS_MSBio")
+#setwd("C:/github/MIMICS_MSBio")
+
+#currently giving NAs for all pools and V_int is not seeming to vary
 
 ########################################
 # Load R packages
@@ -12,7 +14,7 @@ library(furrr)
 
 
 ########################################
-# Load MIMICS data and ftns 
+# Load MIMICS data and ftns
 ########################################
 source("MIMICS_ftns/MIMICS_set_parameters.R") #Sets the initial parameters
 source("MIMICS_ftns/MIMICS_INC_daily.R")
@@ -22,7 +24,7 @@ source("MIMICS_ftns/MIMICS_repeat_base.R")
 ########################################
 # Load forcing data
 ########################################
-data <- read.csv("Data/MIMICS_forcings/MSBio_forcing_INC_mock.csv", as.is=T)
+data <- read.csv("Data/MIMICS_forcings/MSBio_forcing_INC_MicroSite.csv", as.is=T) #trying Bartlett microsite data and Vmax and Km to start
 colnames(data)[1] <- "ID"
 
 ####################################
@@ -34,17 +36,21 @@ MIM_runs <- 1000
 
 ### Create random parameter dataframe
 ## Parameter range informed by range observed over 10+ MCMC analysis results
-rand_params <- data.frame(#Vslope_x = runif(MIM_runs, 0.5, 2),  
-                          Vint_x = runif(MIM_runs, 0.8, 1.3)#,  
-                          #Kslope_x = runif(MIM_runs, 0.5, 2),  
-                          #Kint_x = runif(MIM_runs, 0.5, 2)#,  
-                          # Tau_x = runif(MIM_runs, 0.3, 3),  
-                          # CUE_x = runif(MIM_runs, 0.5, 1.5),  
-                          # desorb_x = runif(MIM_runs, 0.001, 0.3),  
-                          # fPHYS_x = runif(MIM_runs, 0.4, 4)  
+rand_params <- data.frame(#Vslope_x = runif(MIM_runs, 0.5, 2),
+                          #Vint_x = runif(MIM_runs, 0.8, 1.3),
+                          #Kslope_x = runif(MIM_runs, 0.5, 2),
+                          #Kint_x = runif(MIM_runs, 0.5, 2)#,
+                          # Tau_x = runif(MIM_runs, 0.3, 3)#,
+                           CUE_x = runif(MIM_runs, 0.5, 1.5)#, #went as small a range as (0.95,1.05) and still didn't work - something ese must be wrong...
+                          # desorb_x = runif(MIM_runs, 0.001, 0.3),
+                          # fPHYS_x = runif(MIM_runs, 0.4, 4)
+                          # vMOD_x = runif(MIM_runs, 0.5, 2)#, #half to double
+                          #kMOD_x = runif(MIM_runs, 0.5, 2)  #half to double
 )
 
 rand_params$run_num <- seq(1,MIM_runs,1)
+
+# must change variable in MIMICS_repeat_base as well
 
 #DEBUG: run default paramaters
 #rand_params[1,1:4] = 1
@@ -74,10 +80,18 @@ nbrOfWorkers()
 # Clean up memory
 gc()
 
+#####################################
 
-## Join forcing data and parameters to MIMICS output table
-MC_MIMICS <- MC_MIMICS %>% left_join(data %>% select(-SITE), by="ID")
-MC_MIMICS <- MC_MIMICS %>% left_join(rand_params)
+#running worked - now need to look at how to determine relationships with soil moisture
+################################
+#1: Determine best fitting parameters - this is where I want to compare to CO2
+###best fit = difference between incubation value and modeled value
+
+#2: Take most common multiplier from best fitting parameters
+
+#3 regress multiplier for each plot against plot moisture
+
+############################################################################
 
 
 ##########################################
@@ -91,13 +105,13 @@ saveRDS(MC_MIMICS, paste0("temp/MSBio_MC_", as.character(MIM_runs), "_", format(
 ######################
 # library(ggplot2)
 # library(ggpubr)
-# 
-# MC_200 <- MC_MIMICS %>% filter(DAY == 200)
-# 
-# MIMplot <- MC_MIMICS %>% 
-#         filter(SITE == "A") %>%
-#         filter(run_num == 1)
-# 
+#
+ MC_105 <- MC_MIMICS %>% filter(DAY == 105) #changed from 200 to 105
+#
+ MIMplot <- MC_MIMICS %>%
+         filter(SITE == "2") %>%
+         filter(run_num == 1)
+#
 # # Litter mass
 # plot_LIT <- ggplot(MIMplot, aes(y=LITs, x=DAY, color="Structural")) + geom_line(size=1) +
 #   geom_line(aes(y=LITm, x=DAY, color="Metabolic"), size=1) +
@@ -106,7 +120,7 @@ saveRDS(MC_MIMICS, paste0("temp/MSBio_MC_", as.character(MIM_runs), "_", format(
 #   xlab("Incubation Time (days)") +
 #   labs(color = "Litter Pool") +
 #   facet_wrap(~MAT)
-# 
+#
 # # SOM & MIC pools
 # plot_SOM_MIC <- ggplot(MIMplot, aes(SOMc, x=DAY, color="SOMc")) + geom_line(size=1) +
 #   geom_line(aes(y=SOMa, x=DAY, color="SOMa"), size=1) +
@@ -118,29 +132,31 @@ saveRDS(MC_MIMICS, paste0("temp/MSBio_MC_", as.character(MIM_runs), "_", format(
 #   labs(color = "C Pool") +
 #   #ylim(0, 50) +
 #   facet_wrap(~MAT)
-# 
+#
 # # CO2 fraction
-# plot_CO2_prop <- ggplot(MIMplot, aes(y=rowSums(MIMplot[,11:12])/rowSums(MIMplot[,4:12]),
-#                    x=DAY, color="CO2-C")) + geom_line(size=1) + #, color="blue") +
-#   theme_bw() +
-#   ylab("CO2 \n(fraction of total)") +
-#   xlab("Incubation Time (days)") +
-#   labs(color = "C Pool") +
-#   #ylim(0,1) +
-#   facet_wrap(~MAT)
-# 
+ plot_CO2_prop <- ggplot(MIMplot, aes(y=rowSums(MIMplot[,11:12])/rowSums(MIMplot[,4:12]),
+                    x=DAY, color="CO2-C")) + geom_line(linewidth=1) + #, color="blue") +
+   theme_bw() +
+   ylab("CO2 \n(fraction of total)") +
+   xlab("Incubation Time (days)") +
+   labs(color = "C Pool")
+ plot_CO2_prop
+   #ylim(0,1) +
+   #facet_wrap(~MAT)
+#
 # #CO2 total
-# plot_CO2_tot <- ggplot(MIMplot, aes(y=rowSums(MIMplot[,11:12]),
-#                                     x=DAY, color="CO2-C")) + geom_line(size=1) + #, color="light blue") +
-#   theme_bw() +
-#   ylab("Cumulative \nRespiration (unit C)") +
-#   xlab("Incubation Time (days)") +
-#   labs(color = "C Pool") +
-#   facet_wrap(~MAT)
-# 
+ plot_CO2_tot <- ggplot(MIMplot, aes(y=rowSums(MIMplot[,11:12]),
+                                     x=DAY, color="CO2-C")) + geom_line(size=1) + #, color="light blue") +
+   theme_bw() +
+   ylab("Cumulative \nRespiration (unit C)") +
+   xlab("Incubation Time (days)") +
+   labs(color = "C Pool")
+ plot_CO2_tot
+ #facet_wrap(~MAT)
+#
 # ptbl <- ggtexttable(round(MIMplot[1, 21:24], 3), rows = NULL,
 #                     theme = ttheme("light"))
-# 
+#
 # # Build a panel plot
 # ggarrange(plot_LIT, plot_SOM_MIC, plot_CO2_prop, ptbl,
 #           nrow=4,
