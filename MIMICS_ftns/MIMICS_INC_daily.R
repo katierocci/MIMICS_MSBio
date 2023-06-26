@@ -31,7 +31,7 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   #lig_N      <- df$lig_N
   #fW         <- df$fW # Soil moisture scalar
   soilGWC    <- df$soilGWC/100 # For use as scalar on decomposition rate
-  MS_GWC     <- df$MS_GWC/100 #Katie added in for microsite moisture control of initial Vslope
+  MS_GWC     <- df$MS_GWC/100 #Katie added in for microsite moisture control of vaious parameters
 
   ### Set fMET (=partioning coefficient for metabolic vs. structural litter pools)
 
@@ -69,6 +69,7 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   Tau_MOD1[Tau_MOD1 > Tau_MOD[3]] <- Tau_MOD[3]
   tau <- c(tau_r[1]*exp(tau_r[2]*fMET),
            tau_K[1]*exp(tau_K[2]*fMET))
+  Tau_MULT <- (1.63 - 0.29*MS_GWC) * Tau_MULT
   tau <- tau * Tau_MOD1 * Tau_MOD2 * Tau_MULT
 
   fPHYS    <- c(fPHYS_r[1] * exp(fPHYS_r[2]*fCLAY),
@@ -83,7 +84,7 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   fPHYS <- fPHYS * fPHYS_MULT
 
   pSCALAR  <- PHYS_scalar[1] * exp(PHYS_scalar[2]*(sqrt(fCLAY)))  #Scalar for texture effects on SOMp
-  #vMOD <- vMOD * (1.4+0.15*MS_GWC)
+  #vMOD <- vMOD * (1.6+0.15*MS_GWC)
   v_MOD    <- vMOD
   k_MOD    <- kMOD
   k_MOD[3] <- k_MOD[3] * pSCALAR
@@ -116,7 +117,9 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   #CUE_scalar <- 1/(1+0.3*exp(-2.5*soilGWC))
   #CUE <- CUE*CUE_scalar
 
-
+  #scalar for TREE from Derek's method
+   CUE_scalar <- 1 + (0.155*MS_GWC)
+   CUE <- CUE*CUE_scalar
 
   ############################################################
   # MIMICS MODEL RUN STARTS HERE
@@ -145,6 +148,8 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
                        SOMa = rep(NA, nday),
                        CO2_MICr = rep(NA, nday),
                        CO2_MICK = rep(NA, nday))
+  #creating empyt data frame to see if CUE is changing
+  #ftn_output <- data.frame()
 
   # Initialize model pools and fluxes
   I       <- rep(0,2)
@@ -173,6 +178,7 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   DEsorb <<- DEsorb
   OXIDAT <<- OXIDAT
   #KT added this
+  #.GlobalEnv$CUE <- CUE
   CUE <<- CUE
   #tau <<- tau
 
@@ -216,6 +222,8 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
     MIMout$SOMa[d] <- SOM_3
     MIMout$CO2_MICr[d] <- CO2_1
     MIMout$CO2_MICK[d] <- CO2_2
+    #KT add
+    #MIMout$CUE_K.met[d] <- CUE[3]
   }	#close daily loop
 
   # Return daily model output as datatable
@@ -224,6 +232,7 @@ MIMICS_INC_DAILY <- function(df, ndays=105, parm_mult){
   #ftn_output <- MIMout %>% filter(DAY == 105) #Only day 200
   #ftn_output$VMAX <- VMAX[1]
   #ftn_output$KM <- KM[1]
+  #ftn_output$CUE <- CUE[1]
   #return(ftn_output)
 
 
